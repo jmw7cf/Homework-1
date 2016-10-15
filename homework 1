@@ -1,0 +1,186 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct car{
+        char* license_plate; //license plate of car
+        int parking_spot;  //parking spot the car is parked in
+        int num_tickets;        //number of tickets that have been issued to that car
+        int time_left;  //time remaining(in minutes) on the car's parking spot
+}Car;
+
+#define LICENSEPLATELENGTH 10 //max size of the license plate
+Car* import_cars(char* filename, int numCars);  //returns an array full of cars
+void adjust_cars(Car* garage, int numCars);
+int find_car(Car* garage, int spot, int numCars);
+void add_time(Car* garage, int numCars);
+void free_garage(Car* garage, int numCars);
+void check_car(Car* garage, int numCars);
+void print_to_file(char* filename, Car* garage, int numCars);
+
+int main(int argc, char* argv[3])
+{
+        int numCars=atoi(argv[1]);
+
+        if(argc != 3)
+        {
+                printf("Incorrect input.\nCorrect usage ./a.out <numCars> <input/output file>\n");
+        }
+else{   //if the user inputs enough args
+
+        int userInput;
+
+        Car *garage = import_cars(argv[2], numCars);
+
+        printf("\nTo add time enter '1'\nTo check time enter '2'\nTo exit enter '-1'\nPlease enter your choice:");
+        scanf("%d", &userInput);
+
+        while(userInput != (-1)) //as long as the user doesn't choose -1, run this loop
+        {
+                if(userInput==1)
+                {
+                        add_time(garage, numCars);
+                }
+                if(userInput==2)
+                {
+                        check_car(garage, numCars);
+                }
+                 printf("\nTo add time enter '1'\nTo check time enter '2'\nTo exit enter '-1'\nPlease enter your choice:");
+        scanf("%d", &userInput);
+        }
+
+        adjust_cars(garage, numCars);
+        print_to_file(argv[2], garage, numCars);
+        free_garage(garage, numCars);
+}
+return 0;
+}
+
+Car* import_cars(char* filename, int numCars)
+{
+        FILE *file;
+
+        if((file=fopen(filename, "r"))==NULL)
+        {
+                printf("Could not open file");
+                return NULL;
+        }
+
+        Car* arrayCars=malloc(sizeof(Car)*numCars);     //makes an stuct the size of the user's number of cars
+
+        int i;
+
+        for(i=0; i<numCars; i++)
+        {
+                arrayCars[i].license_plate=malloc(LICENSEPLATELENGTH*sizeof(char));     //mallocs memory in license_plate the size of characters*license plate length
+                fscanf(file, "%s\n%d %d %d\n", arrayCars[i].license_plate, &arrayCars[i].parking_spot, &arrayCars[i].num_tickets, &arrayCars[i].time_left);     //scans from the file to the struct
+        }
+
+fclose(file);
+
+return arrayCars;
+}
+
+int find_car(Car* garage, int spot, int numCars)
+{
+        int i=0;
+        for(i=0; i<numCars; i++)        //searches the garage until the parking spot matches the user's parking spot. return the index of the car
+        {
+                if(garage[i].parking_spot== spot)
+                {
+                        return i;
+                }
+        }
+        return (-1);
+}
+
+void add_time(Car* garage, int numCars)
+{       //scans in the parking spot from the user
+        int parkingSpot;
+
+                printf("\nEnter the parking spot of the car:");
+                scanf("%d", &parkingSpot);
+
+        //searches the garage for the user's car
+        int spot=find_car(garage, parkingSpot, numCars);
+
+        if(spot==(-1))          //checks
+        {
+                printf("\nThere is no car parked in that spot\n");
+        }
+
+        else    //adds time
+        {
+
+                 int time;
+                 printf("Enter the amount of time you would like to add:");
+                 scanf("%d", &time);
+
+                garage[spot].time_left=garage[spot].time_left+time;
+        }
+
+}
+
+void check_car(Car* garage, int numCars)
+{       //searches the garage
+        int parkingSpot;
+
+        printf("\nEnter the spot the car is parked in:");
+        scanf("%d", &parkingSpot);
+                int spot=find_car(garage,parkingSpot,numCars);
+
+        if(spot==(-1))
+        {
+                printf("\nThere is no car parked in that spot\n");
+        }
+
+        else{           //tells the user the information about the car at that spot
+                printf("\nLicense Plate: %s\nParking Spot: %d\nNumber of Tickets: %d\nTime Left: %d minutes\n", garage[spot].license_plate, parkingSpot, garage[spot].num_tickets, garage[spot].time_left);}
+}
+
+void free_garage(Car* garage, int numCars)
+{
+        int i;
+
+        for(i=0; i<numCars; i++)
+        {
+                free(garage[i].license_plate);
+        }
+free(garage);
+}
+
+void adjust_cars(Car* garage, int numCars)
+{
+        int i;
+
+        for(i=0; i<numCars; i++)
+        {
+                garage[i].time_left=garage[i].time_left-30;     //subtracts 30 min
+
+                if(garage[i].time_left <= 0)
+                {
+                        garage[i].num_tickets=garage[i].num_tickets+1;  //gives ticket
+                        garage[i].time_left=60;                 //resets time to 60 min
+                }
+        }
+
+}
+
+void print_to_file(char* filename, Car* garage, int numCars)
+{
+        FILE *file;
+        int i;
+
+        if((file=fopen(filename, "w"))==NULL)
+        {
+                printf("Unable to write to file");
+        }
+
+        for(i=0; i<numCars; i++)        //updates the input/output file with the adjusted car info
+        {
+                fprintf(file, "%s\n%d %d %d\n", garage[i].license_plate, garage[i].parking_spot, garage[i].num_tickets, garage[i].time_left);
+        }
+
+fclose(file);
+
+return;
+}
